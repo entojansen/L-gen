@@ -34,6 +34,16 @@ class Repeat(pl.base_classes.CommandBase):
     _latex_name = "Repeat"
 
 
+def read_data(ext=[".xls", ".xlsx", ".xlsm", ".xlsb", ".odf", ".ods", ".odt"]):
+    # insert docstring here
+    files = [fn for fn in ld(".") if any([e in fn for e in ext])]
+    # note, Excel file cannot be read if open elsewhere!
+    data = [read_excel(fn, comment="#").dropna(how="all").fillna("")
+            for fn in files]
+    ddict = dict(zip(files, data))
+    return ddict
+
+
 def read_format(file="format.txt"):
     '''
     Func: read_format() accepts a file name as input, opens the file and
@@ -65,16 +75,6 @@ def read_format(file="format.txt"):
                 pass
 
     return fdict
-
-
-def read_data(ext=[".xls", ".xlsx", ".xlsm", ".xlsb", ".odf", ".ods", ".odt"]):
-    # insert docstring here
-    files = [fn for fn in ld(".") if any([e in fn for e in ext])]
-    # note, Excel file cannot be read if open elsewhere!
-    data = [read_excel(fn, comment="#").dropna(how="all").fillna("")
-            for fn in files]
-    ddict = dict(zip(files, data))
-    return ddict
 
 
 def make_labels(form, name, data):
@@ -197,15 +197,13 @@ def make_labels(form, name, data):
     doc.append(pl.utils.NoEscape(r"\raggedright"))
 
     with doc.create(MultiCol(arguments=pl.utils.NoEscape(r"\cols"))) as mcols:
-        val_mods = eval(form["val_mods"])
-        for func in val_mods:
-            data[func] = data[func].apply(lambda val: eval(val_mods[func]))
+        try:
+            val_mods = eval(form["val_mods"])
+            for func in val_mods:
+                data[func] = data[func].apply(lambda val: eval(val_mods[func]))
+        except KeyError:
+            pass
         for row in data.to_dict(orient='records'):
-            for key in row.keys():
-                try:
-                    row[key] = row[key].strftime(form["date_format"])
-                except AttributeError:
-                    pass
             for line_pair in line_keys:
                 args = [line_pair[1], (",").join(
                         ["{}={{{}}}".format(key, row[key])
@@ -220,14 +218,19 @@ def make_labels(form, name, data):
                          extra_arguments=LabelBox(LabelGen())))
             mcols.append(LabelBox(""))
 
-    doc.generate_pdf(r"../out/"+name, clean_tex=False, compiler=form["compiler"])
+    doc.generate_pdf(r"../out/" + name,
+                     clean_tex=False,
+                     compiler=form["compiler"])
 
 
 def main():
     data = read_data()
     for file in data.items():
         name = file[0][:file[0].rfind(".")]
-        form = read_format(name + ".format")
+        try:
+            form = read_format(name + ".format")
+        except FileNotFoundError:
+            form = read_format()
         make_labels(form, name, file[1])
 
 
