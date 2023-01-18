@@ -1,0 +1,93 @@
+\documentclass[10pt,letterpaper]{memoir}%
+\usepackage[T1]{fontenc}%
+\usepackage[utf8]{inputenc}%
+\usepackage{microtype}%
+\usepackage{geometry}%
+\geometry{left=1cm,right=1cm,top=0.8cm,bottom=0.8cm}%
+\usepackage{savetrees}%
+\usepackage{libertine}%
+\usepackage[scaled=0.95]{helvet}%
+\usepackage{nimbusmononarrow}%
+\usepackage{multicol}%
+\usepackage{expl3}%
+\usepackage{keyval}%
+%
+\renewcommand{\familydefault}{\sfdefault}%
+\setlength{\columnsep}{0.01cm}%
+\setlength{\parindent}{0pt}%
+\setlength{\parskip}{0pt}%
+\ExplSyntaxOn%
+\cs_new_eq:NN \Repeat \prg_replicate:nn%
+\ExplSyntaxOff%
+\makeatletter%
+\define@cmdkeys{LineA}[LineA@]{Country,AdmOne}%
+\define@cmdkeys{LineB}[LineB@]{LocalityName,DateCollected,DateCollEnd}%
+\define@cmdkeys{LineC}[LineC@]{Latitude,Longitude}%
+\define@cmdkeys{LineD}[LineD@]{CollectedBy}%
+\define@cmdkeys{LineE}[LineE@]{Method,Habitat}%
+\define@cmdkeys{LineF}[LineF@]{ElevationM,CollectionCode}%
+\define@cmdkeys{format}[format@]{NumLabels,height,width,fsize,fskip,stretch,cols}%
+\setkeys{format}{height=27.5pt,width=45pt,fsize=3pt,fskip=4pt,stretch=0.76,cols=12}%
+\newcommand{\reps}{\format@NumLabels}%
+\newcommand{\fsize}{\format@fsize}%
+\newcommand{\fskip}{\format@fskip}%
+\newcommand{\cols}{\format@cols}%
+\newcommand{\labelbox}[1]{\parbox[t]{\format@width}{#1}\newline\newline}%
+\renewcommand{\baselinestretch}{\format@stretch}%
+\newcommand{\lgen}{\raggedright
+	\textbf{\MakeUppercase{\LineA@Country:}}~\LineA@AdmOne
+
+	\def\nulldate{00/00/00} {\LineB@LocalityName}, \LineB@DateCollected {\ifx\LineB@DateCollEnd\nulldate \else{~--~\LineB@DateCollEnd}\fi}
+
+	\texttt{\fontsize{3.25pt}{3pt}\selectfont \LineC@Latitude, \LineC@Longitude}
+
+	\LineD@CollectedBy
+
+	\def\nullmethod{} {\ifx\LineE@Method\nullmethod \else{\LineE@Method~-- }\fi}{\LineE@Habitat}
+
+	\LineF@ElevationM, \LineF@CollectionCode}%
+\makeatother%
+%
+\begin{document}%
+\pagestyle{empty}%
+\fontsize{\fsize}{\fskip}\selectfont%
+\raggedright%
+\begin{multicols*}{\cols}%
+\setkeys{LineA}{Country={Madagascar},AdmOne={Toliara}}%
+\setkeys{LineB}{LocalityName={Tolagnaro (=Fort Dauphin)},DateCollected={11/11/1992},DateCollEnd={11/11/2000}}%
+\setkeys{LineC}{Latitude={-25.03333},Longitude={47.00000}}%
+\setkeys{LineD}{CollectedBy={B.L.Fisher}}%
+\setkeys{LineE}{Method={},Habitat={park/garden}}%
+\setkeys{LineF}{ElevationM={5 m},CollectionCode={BLF00475}}%
+\setkeys{format}{NumLabels=100}%
+\Repeat{\reps}{\labelbox{\lgen}}%
+\labelbox{}%
+\setkeys{LineA}{Country={Madagascar},AdmOne={Toliara}}%
+\setkeys{LineB}{LocalityName={4 km NW Enkara},DateCollected={13/11/1992},DateCollEnd={00/00/00}}%
+\setkeys{LineC}{Latitude={-24.58333},Longitude={46.78333}}%
+\setkeys{LineD}{CollectedBy={B.L.Fisher}}%
+\setkeys{LineE}{Method={},Habitat={disturbed rainforest}}%
+\setkeys{LineF}{ElevationM={300 m},CollectionCode={BLF00478}}%
+\setkeys{format}{NumLabels=100}%
+\Repeat{\reps}{\labelbox{\lgen}}%
+\labelbox{}%
+\setkeys{LineA}{Country={Madagascar},AdmOne={Toliara}}%
+\setkeys{LineB}{LocalityName={Cul du Marosohy},DateCollected={14/11/1992},DateCollEnd={00/00/00}}%
+\setkeys{LineC}{Latitude={-24.55000},Longitude={46.83333}}%
+\setkeys{LineD}{CollectedBy={B.L.Fisher}}%
+\setkeys{LineE}{Method={mating swarm},Habitat={montane rainforest edge}}%
+\setkeys{LineF}{ElevationM={1050 m},CollectionCode={BLF00479}}%
+\setkeys{format}{NumLabels=100}%
+\Repeat{\reps}{\labelbox{\lgen}}%
+\labelbox{}%
+\setkeys{LineA}{Country={Madagascar},AdmOne={Toliara}}%
+\setkeys{LineB}{LocalityName={Cul du Marosohy},DateCollected={14/11/1992},DateCollEnd={00/00/00}}%
+\setkeys{LineC}{Latitude={-24.55000},Longitude={46.83333}}%
+\setkeys{LineD}{CollectedBy={B.L.Fisher}}%
+\setkeys{LineE}{Method={},Habitat={rainforest}}%
+\setkeys{LineF}{ElevationM={600 m},CollectionCode={BLF00482}}%
+\setkeys{format}{NumLabels=100}%
+\Repeat{\reps}{\labelbox{\lgen}}%
+\labelbox{}%
+\end{multicols*}%
+\end{document}
