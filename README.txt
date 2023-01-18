@@ -387,6 +387,30 @@ Mandatory commands:
 
 	label_h_max %% 27.5pt
 
+		Sets the maximum label box height to 27.5pt, which looks good for this set of labels.
+		Identical in implementation as previous, but only called in TeX if compress_cols is set to 0.
+		In other words, labels are given a set height only if the columns are not compressed.
+
+		Called and used by pylatex :  <<format_extra_args = "NumLabels,height,width,fsize,fskip,stretch,cols"
+										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
+										doc.preamble.append(format_def)
+
+										format_args = ["format", ("height={},".format(form["label_h_max"]) + ...)
+										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
+										doc.preamble.append(format_cmd)
+
+										...
+
+										if int(form["compress_cols"]):
+											lab_box_def = r"\parbox[t]{\format@width}{#1}\newline\newline"
+										else:
+											lab_box_def = r"\parbox[t][\format@height]{\format@width}{#1}\newline">>
+
+		Writes TeX commands : [[\define@cmdkeys{format}[format@]{NumLabels,height,width,fsize,fskip,stretch,cols}%
+								\setkeys{format}{height=27.5pt,width=45pt,fsize=3pt,fskip=4pt,stretch=0.76,cols=12}%]]
+
+		*Note -- Label height is invoked only if compress_cols set to 0 : [[\newcommand{\labelbox}[1]{\parbox[t][\format@height]{\format@width}{#1}\newline}]].
+
 	baselinestretch %% 0.76
 
 	cols %% 12
