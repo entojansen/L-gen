@@ -149,6 +149,9 @@ NumLabels Column:
 This file (or set of files) contains commands used to control the data included, layout, and format of the labels generated from each input spreadsheet.
 Having these files obviates the need to adjust the core python script every time a different layout is desired for a new dataset.
 At the same time, these files allow for multiple label types to be created from a series of spreadsheets in a single run.
+The values used in the sections below are tailored to a debugging sample based on a subset of target user input.
+Below, each command, value in format.txt (i.e., the "default" format), function, and use in TeX or python is explained.
+Verbatim code in LaTeX is put in double square brackets [[]], while verbatim code in python is placed in double angle brackets <<>>.
 
 General notes:
 
@@ -163,30 +166,257 @@ General notes:
 Mandatory commands:
 
 	As the name suggests, these commands must be present in the file to run L-gen.py and write the TeX file.
-	
+	These commands are largely related to global formatting and package options and are set in the preamble of the TeX file.
+
 	pg_size %% letterpaper
+
+		Determines the page size used when setting the document paper size in LaTeX.
+		Many other options available; e.g., "a4paper" for A4 paper size.
+
+		Read into python and called in function make_labels() : <<doc_options = ["10pt", form["pg_size"]]>>
+		*Note -- <<form>> is the name of the dictionary containing key/value pairs from the formatting file; i.e., <<form = {... "pg_size": "letterpaper", ...}>>
+
+		Used by pylatex : <<doc = pl.Document(documentclass="memoir", document_options=doc_options, ...)>>
+		*Note -- <<pl>> is handle for pylatex module as set by <<import pylatex as pl>>
+
+		Writes TeX command : [[\documentclass[10pt,letterpaper]{memoir}%]]
+
 	pg_margins %% left=1cm,right=1cm,top=0.8cm,bottom=0.8cm
+
+		Sets page margins using the [[geometry]] package in LaTeX.
+		Can be adjusted to use any value; units include mm, in, pt, em, &c...
+
+		Called and used by pylatex : <<doc = pl.Document(documentclass="memoir", ... geometry_options=form["pg_margins"])>>
+
+		Writes TeX commands : [[\usepackage{geometry}%
+								\geometry{left=1cm,right=1cm,top=0.8cm,bottom=0.8cm}%]]
+
 	font_rm %% libertine
+
+		Sets the "roman modern" font (i.e., serif font) to Linux Libertine using the [[libertine]] package.
+		Specifically calls a font package that must be installed separately, and can be exchanged with other font packages; e.g., [[palatino]].
+
+		Called and used by pylatex : <<doc.packages.append(pl.Package(form["font_rm"]))>>
+
+		Writes TeX command : [[\usepackage{libertine}%]]
+
 	font_sf %% helvet
+
+		Sets the sans serif font to Helvetica using the [[helvet]] package.
+		Specifically calls a font package that must be installed separately, as described above.
+		Sans serif fonts scaled by 0.95 to match serif fonts.
+
+		Called and used by pylatex : <<doc.packages.append(pl.Package(form["font_sf"], "scaled=0.95"))>>
+
+		Writes TeX command : [[\usepackage[scaled=0.95]{helvet}%]]
+
 	font_tt %% nimbusmononarrow
+
+		Sets the sans serif font to Nimbus 15 Mono Narrow using the [[nimbusmononarrow]] package.
+		Specifically calls a font package that must be installed separately, as described above.
+
+		Called and used by pylatex : <<doc.packages.append(pl.Package(form["font_tt"]))>>
+
+		Writes TeX command : [[\usepackage{nimbusmononarrow}%]]
+
 	sans_serif %% 1
+
+		Specifies whether or not to make sans serif font the default font for the document.
+		A value of 0 leaves serif fonts as the document font by default.
+		A value of 1 changes the document font to the sans serif font by default.
+
+		Called and used by pylatex :  <<if int(form["sans_serif"]):
+											sans_cmd = pl.UnsafeCommand("renewcommand", [r"\familydefault", r"\sfdefault"])
+											doc.preamble.append(sans_cmd)
+										else:
+											pass>>
+
+		If set to 1, writes TeX command : [[\renewcommand{\familydefault}{\sfdefault}%]]
+		Else if set to 0, no command is written, since document default is serif font.
+
 	compress_cols %% 1
+
+		Specifies whether or not to "compress" columns in document by removing empty spaces between labels.
+		Normally, label dimensions are defined by width and height, which enforces the size of the invisible box around the text.
+		Compression allows the text to flow without extra space between labels, and the invisible box is set equal to the height of the text.
+		Normal colums are nice for cutting labels with wide margins, or using a paper cutter because the labels form a neat grid.
+		Compressed columns are better for cutting strips of labels with scissors, with minimal white space, and for saving paper (grid alignment is not enforced).
+
+		-------------
+		|			|	
+		|	Normal	|		-------------
+		|			|		| Compress	|
+		-------------	vs	-------------
+		|			|		| Compress	|
+		|	Normal	|		-------------
+		|			|
+		-------------
+
+		Called and used by pylatex :  <<if int(form["compress_cols"]):
+											lab_box_def = r"\parbox[t]{\format@width}{#1}\newline\newline"
+										else:
+											lab_box_def = r"\parbox[t][\format@height]{\format@width}{#1}\newline"
+
+										lab_box_cmd = pl.UnsafeCommand("newcommand", r"\labelbox", options=1, extra_arguments=lab_box_def)
+										doc.preamble.append(lab_box_cmd)>>
+
+		If set to 1, writes TeX command : [[\newcommand{\labelbox}[1]{\parbox[t]{\format@width}{#1}\newline\newline}%]]
+		Else if set to 0, write instead : [[\newcommand{\labelbox}[1]{\parbox[t][\format@height]{\format@width}{#1}\newline}]]
+		*Note -- [[\newline\newline]] adds a thin extra space between labels in compressed columns for ease of cutting.
+
 	font_size %% 3pt
-	font_skip %% 4pt
-	label_w_max %% 45pt
-	label_h_max %% 27.5pt
-	baselinestretch %% 0.76
-	cols %% 12
-	col_sep %% 0.01cm
-	compiler %% pdflatex
+
+		Sets the font size to 3pt.
+		Implementation is surprisingly complex, and relies on the memoir document class.
+		Memoir class allows arbitrarily small fonts to be set.
+		A group of key/val pairs called [[format]] is then created in LaTeX, with the key [[fsize]] set equal to the desired font size.
+		To reference this stored vale, a new command [[\fsize]] is created in the preamble.
+		This new command is finally used in the document section to set the font.
+
+		Called and used by pylatex :  <<doc = pl.Document(documentclass="memoir", font_size=r"fontsize{\fsize}{\fskip}\selectfont", ...)
+
+										...
+
+										format_extra_args = "NumLabels,height,width,fsize,fskip,stretch,cols"
+										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
+										doc.preamble.append(format_def)
+
+										format_args = ["format", (... + "fsize={},".format(form["font_size"]) + ...)
+										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
+										doc.preamble.append(format_cmd)
+
+										...
+
+										fsize_cmd = pl.UnsafeCommand("newcommand", r"\fsize", extra_arguments=r"\format@fsize")
+
+										...
+
+										doc.preamble.append(fsize_cmd)>>
+
+		Writes TeX commands : [[\define@cmdkeys{format}[format@]{NumLabels,height,width,fsize,fskip,stretch,cols}%
+								\setkeys{format}{height=27.5pt,width=45pt,fsize=3pt,fskip=4pt,stretch=0.76,cols=12}%
+								\newcommand{\fsize}{\format@fsize}%
+
+								...
+
+								\begin{document}%
+									\pagestyle{empty}%
+									\fontsize{\fsize}{\fskip}\selectfont%
+
+									...
+
+								\end{document}]]
+
+		*Note -- The first 3 lines in the verbatim TeX code are written by all but the first line of python code, which actually sets the font size in the document.
+				 This was done to avoid writing any formatting values directly into the document section, thus restricting formatting parameters to the preamble.
 	
+	font_skip %% 4pt
+
+		Sets the line height/skip to 4pt.
+		Similar to previous command in implementation.
+		A group of key/val pairs called [[format]] is then created in LaTeX, with the key [[fskip]] set equal to the desired font size.
+		To reference this stored vale, a new command [[\fskip]] is created in the preamble.
+		This new command is finally used in the document section to set the font.
+
+		Called and used by pylatex :  <<doc = pl.Document(documentclass="memoir", font_size=r"fontsize{\fsize}{\fskip}\selectfont", ...)
+
+										...
+
+										format_extra_args = "NumLabels,height,width,fsize,fskip,stretch,cols"
+										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
+										doc.preamble.append(format_def)
+
+										format_args = ["format", (... + "fskip={},".format(form["font_skip"]) + ...)
+										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
+										doc.preamble.append(format_cmd)
+
+										...
+
+										fsize_cmd = pl.UnsafeCommand("newcommand", r"\fskip", extra_arguments=r"\format@fskip")
+
+										...
+
+										doc.preamble.append(fskip_cmd)>>
+
+		Writes TeX commands : [[\define@cmdkeys{format}[format@]{NumLabels,height,width,fsize,fskip,stretch,cols}%
+								\setkeys{format}{height=27.5pt,width=45pt,fsize=3pt,fskip=4pt,stretch=0.76,cols=12}%
+								\newcommand{\fsize}{\format@fsize}%
+
+								...
+
+								\begin{document}%
+									\pagestyle{empty}%
+									\fontsize{\fsize}{\fskip}\selectfont%
+
+									...
+
+								\end{document}]]
+
+		*Note -- As before, this was done to restrict formatting parameters to the preamble.
+	
+	label_w_max %% 45pt
+
+		Sets the maximum label box width t0 45pt, which looks good for this set of labels.
+		This parameter is most likely to need adjustment to fit user needs and is largely aesthetic.
+		As before, a formatting parameter and command are created to access this value.
+		This value is referenced in the preamble when the [[\labelbox]] command is created (see compress_cols above).
+
+		Called and used by pylatex :  <<format_extra_args = "NumLabels,height,width,fsize,fskip,stretch,cols"
+										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
+										doc.preamble.append(format_def)
+
+										format_args = ["format", (... + "width={},".format(form["label_w_max"]) + ...)
+										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
+										doc.preamble.append(format_cmd)
+
+										...
+
+										if int(form["compress_cols"]):
+											lab_box_def = r"\parbox[t]{\format@width}{#1}\newline\newline"
+										else:
+											lab_box_def = r"\parbox[t][\format@height]{\format@width}{#1}\newline">>
+
+		Writes TeX commands : [[\define@cmdkeys{format}[format@]{NumLabels,height,width,fsize,fskip,stretch,cols}%
+								\setkeys{format}{height=27.5pt,width=45pt,fsize=3pt,fskip=4pt,stretch=0.76,cols=12}%
+
+								...
+
+								\newcommand{\labelbox}[1]{\parbox[t]{\format@width}{#1}\newline\newline}%]]
+
+		*Note -- If compress_cols set to 0, write instead : [[\newcommand{\labelbox}[1]{\parbox[t][\format@height]{\format@width}{#1}\newline}]].
+
+	label_h_max %% 27.5pt
+
+	baselinestretch %% 0.76
+
+	cols %% 12
+
+	col_sep %% 0.01cm
+
+	compiler %% pdflatex
+
 
 Optional column modifiers:
 
+	val_mods %% {"Latitude": "'{:.5f}'.format(val)", "Longitude": "'{:.5f}'.format(val)", "DateCollected": "val.strftime('%d/%m/%Y')", "DateCollEnd": "val.strftime('%d/%m/%Y') if hasattr(val,'strftime') else val"}
+
 
 Data inclusion:
+
+	line_a_cols %% Country,AdmOne
+	line_b_cols %% LocalityName,DateCollected,DateCollEnd
+	line_c_cols %% Latitude,Longitude
+	line_d_cols %% CollectedBy
+	line_e_cols %% Method,Habitat
+	line_f_cols %% ElevationM,CollectionCode
 
 Layout formatting:
 
 	A "line" here means a single formatted entry on the label, which may span more than one line on the printed page.
 
+	line_a_form %% \textbf{\MakeUppercase{\LineA@Country:}}~\LineA@AdmOne
+	line_b_form %% \def\nulldate{00/00/00} {\LineB@LocalityName}, \LineB@DateCollected {\ifx\LineB@DateCollEnd\nulldate \else{~--~\LineB@DateCollEnd}\fi}
+	line_c_form %% \texttt{\fontsize{3.25pt}{3pt}\selectfont \LineC@Latitude, \LineC@Longitude}
+	line_d_form %% \LineD@CollectedBy
+	line_e_form %% \def\nullmethod{} {\ifx\LineE@Method\nullmethod \else{\LineE@Method~-- }\fi}{\LineE@Habitat}
+	line_f_form %% \LineF@ElevationM, \LineF@CollectionCode
