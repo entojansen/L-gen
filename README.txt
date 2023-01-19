@@ -281,7 +281,7 @@ Mandatory commands:
 										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
 										doc.preamble.append(format_def)
 
-										format_args = ["format", (... + "fsize={},".format(form["font_size"]) + ...)
+										format_args = ["format", (... + "fsize={},".format(form["font_size"]) + ...)]
 										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
 										doc.preamble.append(format_cmd)
 
@@ -326,7 +326,7 @@ Mandatory commands:
 										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
 										doc.preamble.append(format_def)
 
-										format_args = ["format", (... + "fskip={},".format(form["font_skip"]) + ...)
+										format_args = ["format", (... + "fskip={},".format(form["font_skip"]) + ...)]
 										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
 										doc.preamble.append(format_cmd)
 
@@ -365,7 +365,7 @@ Mandatory commands:
 										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
 										doc.preamble.append(format_def)
 
-										format_args = ["format", (... + "width={},".format(form["label_w_max"]) + ...)
+										format_args = ["format", (... + "width={},".format(form["label_w_max"]) + ...)]
 										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
 										doc.preamble.append(format_cmd)
 
@@ -395,7 +395,7 @@ Mandatory commands:
 										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
 										doc.preamble.append(format_def)
 
-										format_args = ["format", ("height={},".format(form["label_h_max"]) + ...)
+										format_args = ["format", ("height={},".format(form["label_h_max"]) + ...)]
 										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
 										doc.preamble.append(format_cmd)
 
@@ -413,17 +413,138 @@ Mandatory commands:
 
 	baselinestretch %% 0.76
 
+		Formats the inter-line spacing by the amount specified; adjusted based on aesthetic preferences.
+		In this case the line spacing is reduced to 0.76 to account for smaller font height.
+		Used as a formatting parameter in LaTeX as described above.
+
+		Called and used by pylatex :  <<format_extra_args = "NumLabels,height,width,fsize,fskip,stretch,cols"
+										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
+										doc.preamble.append(format_def)
+
+										format_args = ["format", (... + "stretch={},".format(form["baselinestretch"]) + ...)]
+										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
+										doc.preamble.append(format_cmd)
+
+										...
+
+										stretch_cmd = pl.UnsafeCommand("renewcommand", [r"\baselinestretch", r"\format@stretch"])
+										doc.preamble.append(stretch_cmd)>>
+
+		Writes TeX commands : [[\define@cmdkeys{format}[format@]{NumLabels,height,width,fsize,fskip,stretch,cols}%
+								\setkeys{format}{height=27.5pt,width=45pt,fsize=3pt,fskip=4pt,stretch=0.76,cols=12}%
+
+								...
+
+								\renewcommand{\baselinestretch}{\format@stretch}%]]
+
+
 	cols %% 12
+
+		This command defines the number of columns in the document with a maximum 20 columns.
+		Used by the LaTeX package [[multicol]], in a [[multicols*]] environment, which fills each column before moving to the next.
+		The [[multicols]] environment (without the *, and not used here) will distribute text evenly between columns to fill out each row.
+		Formatted with other parameters and called in the document section of the TeX file.
+
+		Called and used by pylatex :  <<format_extra_args = "NumLabels,height,width,fsize,fskip,stretch,cols"
+										format_def = pl.UnsafeCommand(r"define@cmdkeys", r"format", options=r"format@", extra_arguments=format_extra_args)
+										doc.preamble.append(format_def)
+
+										format_args = ["format", (... + "cols={}".format(form["cols"]))]
+										format_cmd = pl.base_classes.Command("setkeys", arguments=format_args)
+										doc.preamble.append(format_cmd)
+
+										...
+
+										cols_cmd = pl.UnsafeCommand("newcommand", r"\cols", extra_arguments=r"\format@cols")
+
+										...
+
+										doc.preamble.append(cols_cmd)
+
+										...
+
+										with doc.create(MultiCol(arguments=pl.utils.NoEscape(r"\cols"))) as mcols:
+											... >>>>
+
+		Writes TeX commands : [[\define@cmdkeys{format}[format@]{NumLabels,height,width,fsize,fskip,stretch,cols}%
+								\setkeys{format}{height=27.5pt,width=45pt,fsize=3pt,fskip=4pt,stretch=0.76,cols=12}%
+
+								...
+
+								\newcommand{\cols}{\format@cols}%
+
+								...
+
+								\begin{document}%
+
+								...
+
+									\begin{multicols*}{\cols}%
+
+									...
+
+									\end{multicols*}%
+								\end{document}]]
 
 	col_sep %% 0.01cm
 
+		Sets the amount of extra spacing between adjacent columns.
+		Adjusted based on aesthetic preferences, and minimized in this case.
+
+		Called and used by pylatex : <<col_sep_cmd = r"\setlength{\columnsep}{" + "{}".format(form["col_sep"]) + r"}">>
+
+		Writes TeX command : [[\setlength{\columnsep}{0.01cm}%]]
+
 	compiler %% pdflatex
+
+		Indicates the preferred compiler for the TeX file.
+		Normally pdflatex is used to generate PDF files, but xetex and luatex are also suitable options.
+		If the compiler is set to "latex", a DVI file will be produced instead.
+
+		Called and used by pylatex to compile TeX file : <<doc.generate_pdf(..., compiler=form["compiler"])>>
 
 
 Optional column modifiers:
 
-	val_mods %% {"Latitude": "'{:.5f}'.format(val)", "Longitude": "'{:.5f}'.format(val)", "DateCollected": "val.strftime('%d/%m/%Y')", "DateCollEnd": "val.strftime('%d/%m/%Y') if hasattr(val,'strftime') else val"}
+	The optional column modifiers specified by val_mods are formulae that are applied to every value in a given column of the spreadsheet.
+	These are called only in python and do not interact at all with the TeX file.
+	Because these formulae are specified in the format file, they are implemented in the make_labels() function.
+	For clarity and explanation, each key/val pair in the dictionary is placed on a new line.
+	However, the entry for val_mods in the format file should be placed on a single line, unlike the example below:
+	
+		val_mods %% {"Latitude": "'{:.5f}'.format(val)",
+					 "Longitude": "'{:.5f}'.format(val)",
+					 "DateCollected": "val.strftime('%d/%m/%Y')",
+					 "DateCollEnd": "val.strftime('%d/%m/%Y') if hasattr(val,'strftime') else val"}
 
+	This command is read verbatim and evaluated to create a python dictionary.
+	The key/val pairs correspond to the name of the column needing modification and the formula to be used.
+	Due to the use of eval() to read the values, the names and formulae must be put in double quotation marks: ""
+	If a string is used in a formula for formatting purposes, the string should be delimited with single quotation marks: ''
+	The python variable <<val_mods>> is created as follows:
+
+		<<try:
+			  val_mods = eval(form["val_mods"])
+			  for func in val_mods:
+				  data[func] = data[func].apply(lambda val: eval(val_mods[func]))
+		  except KeyError:
+			  pass>>
+
+		*Note -- <<form>> is the dictionary creaded from the formatting file, while <<data>> is the pandas dataframe created from the spreadsheet.
+
+	The line <<data[func] = data[func].apply(lambda val: eval(val_mods[func]))>> can be written in pseudocode as:
+
+		column = column.apply(formula), where the formula comes from val_mods.
+
+	Thus, the values in the column are overwritten with new values that have the formula applied to them.
+	To achieve this, a funciton is defined and called using <<lambda>>; e.g., (lambda x: x + 1), which adds 1 to each value <<x>>.
+	The funcitons used in the default file (format.txt) have two roles.
+	First, the coordinates found in columns "Latitude" and "Longitude" are formatted to display 5 decimal places with standard string formatting.
+	Second, the dates found in columns "DateCollected" and "DateCollEnd" are formatted to display "mm/dd/yyyy", using the .strftime method.
+	*Note -- "DateCollEnd" has some values that are null dates (00/00/00).
+			 These are not printed, as explained in Layout formatting, below.
+			 However, they can cause issues with .strftime because they are not read by excel as dates (just as text).
+			 A check is performed to veryify whether .strftime is a valid attribute for the value, and formatted only if so.
 
 Data inclusion:
 
