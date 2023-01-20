@@ -174,9 +174,6 @@ def make_labels(form, name, data):
                                                     r"\format@stretch"])
     doc.preamble.append(stretch_cmd)
 
-    # doc.preamble.append(pl.utils.NoEscape(r"\def\nulldate{00/00/00}"))
-    # doc.preamble.append(pl.utils.NoEscape(r"\def\nullmethod{}"))
-
     label_text = r""
     for key in sorted(form.keys()):
         if key[0:4] == "line" and key[-4:] == "form":

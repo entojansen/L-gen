@@ -548,20 +548,144 @@ Optional column modifiers:
 
 Data inclusion:
 
-	line_a_cols %% Country,AdmOne
-	line_b_cols %% LocalityName,DateCollected,DateCollEnd
-	line_c_cols %% Latitude,Longitude
-	line_d_cols %% CollectedBy
-	line_e_cols %% Method,Habitat
-	line_f_cols %% ElevationM,CollectionCode
+	In order to specify what data goes onto the label, this script relies on user input in 2 parts.
+	First, the user gives the names of the columns to be used and the line in which they will be used (Data inclusion).
+	Second, the user specifies how the data will be formatted on each line (Layout formatting).
+	*Note -- A "line" here means a single formatted entry on the label, which may span more than one line on the printed page.
+
+	In this section, the user provides the the names of the columns from which data will be drawn for a given line, as follows:
+
+		line_a_cols %% Country,AdmOne
+		line_b_cols %% LocalityName,DateCollected,DateCollEnd
+		line_c_cols %% Latitude,Longitude
+		line_d_cols %% CollectedBy
+		line_e_cols %% Method,Habitat
+		line_f_cols %% ElevationM,CollectionCode
+
+	Line A, for instance, will use data from the columns named "Country" and "AdmOne".
+	*Note -- order of column names in this section is irrelevant.
+	In python, the name of the line is defined as "line_*_cols" (e.g., Line A is line_a_cols).
+	It is best to use lowecase latin letters for simplicity when naming lines; numbers and special characters may not be used and will cause errors in LaTeX.
+	The keys used in LaTeX are generated directly from the names specified in this section.
+	Thus, every variable referenced in the section below must be defined in this section.
+
+	The implementation in python is as follows:
+
+		<<line_keys = []
+		  for key in sorted(form.keys()):
+			  if key[0:4] == "line" and key[-4:] == "cols":
+				  index = key[5:-5]
+				  line_name = "Line" + index.upper()
+				  line_var = line_name + r"@"
+				  line_def = pl.UnsafeCommand(r"define@cmdkeys", line_name, options=line_var, extra_arguments=form[key])
+				  doc.preamble.append(line_def)
+				  line_keys.append([key, line_name])
+			  else:
+				  pass
+
+		  ...
+
+		  with doc.create(MultiCol(arguments=pl.utils.NoEscape(r"\cols"))) as mcols:
+
+			  ...
+
+			  for row in data.to_dict(orient='records'):
+				  for line_pair in line_keys:
+					  args = [line_pair[1], (",").join(["{}={{{}}}".format(key, row[key]) for key in form[line_pair[0]].split(",")])]
+					  setkeys = pl.UnsafeCommand("setkeys", args)
+					  mcols.append(setkeys)>>
+
+	The first block of code defines the keys (handles that function like variables) using the names given in the format file.
+	The second block of code within the [[\multicolumns*]] environment uses those names to write values from the spreadsheet into the TeX file.
+
+	In LaTeX, the following code is generated:
+
+		[[\define@cmdkeys{LineA}[LineA@]{Country,AdmOne}%
+		  \define@cmdkeys{LineB}[LineB@]{LocalityName,DateCollected,DateCollEnd}%
+		  \define@cmdkeys{LineC}[LineC@]{Latitude,Longitude}%
+		  \define@cmdkeys{LineD}[LineD@]{CollectedBy}%
+		  \define@cmdkeys{LineE}[LineE@]{Method,Habitat}%
+		  \define@cmdkeys{LineF}[LineF@]{ElevationM,CollectionCode}%
+
+		  ...
+
+		  \begin{multicols*}{\cols}%
+			  \setkeys{LineA}{Country={Madagascar},AdmOne={Toliara}}%
+			  \setkeys{LineB}{LocalityName={Tolagnaro (=Fort Dauphin)},DateCollected={11/11/1992},DateCollEnd={11/11/2000}}%
+			  \setkeys{LineC}{Latitude={-25.03333},Longitude={47.00000}}%
+			  \setkeys{LineD}{CollectedBy={B.L.Fisher}}%
+			  \setkeys{LineE}{Method={},Habitat={park/garden}}%
+			  \setkeys{LineF}{ElevationM={5 m},CollectionCode={BLF00475}}%
+
+		  ...
+
+		  \end{multicols*}%]]
+
+	The first block defines keys that are grouped by line, while the second block sets the keys to a value pulled from the spreadsheet.
+	When the command [[\lgen]] is called in LaTeX after each block of [[\setkeys]], the values are written into the output PDF (or DVI).
+	The output values are arranged and formatted according to the label definition created in the section below. 
+
 
 Layout formatting:
 
-	A "line" here means a single formatted entry on the label, which may span more than one line on the printed page.
+	Every variable referenced in this section must be accounted for in the previous section.
+	However, it is possible to include lines containing static strings in this section that are not defined above.
+	In the debugging example, every line has variables that are defined in the previous section:
 
-	line_a_form %% \textbf{\MakeUppercase{\LineA@Country:}}~\LineA@AdmOne
-	line_b_form %% \def\nulldate{00/00/00} {\LineB@LocalityName}, \LineB@DateCollected {\ifx\LineB@DateCollEnd\nulldate \else{~--~\LineB@DateCollEnd}\fi}
-	line_c_form %% \texttt{\fontsize{3.25pt}{3pt}\selectfont \LineC@Latitude, \LineC@Longitude}
-	line_d_form %% \LineD@CollectedBy
-	line_e_form %% \def\nullmethod{} {\ifx\LineE@Method\nullmethod \else{\LineE@Method~-- }\fi}{\LineE@Habitat}
-	line_f_form %% \LineF@ElevationM, \LineF@CollectionCode
+		line_a_form %% \textbf{\MakeUppercase{\LineA@Country:}}~\LineA@AdmOne
+		line_b_form %% \def\nulldate{00/00/00} {\LineB@LocalityName}, \LineB@DateCollected {\ifx\LineB@DateCollEnd\nulldate \else{~--~\LineB@DateCollEnd}\fi}
+		line_c_form %% \texttt{\fontsize{3.25pt}{3pt}\selectfont \LineC@Latitude, \LineC@Longitude}
+		line_d_form %% \LineD@CollectedBy
+		line_e_form %% \def\nullmethod{} {\ifx\LineE@Method\nullmethod \else{\LineE@Method~-- }\fi}{\LineE@Habitat}
+		line_f_form %% \LineF@ElevationM, \LineF@CollectionCode
+
+	However, lines not containing additional variables could be arbitrarily inserted anywhere in this sequence.
+	For example, if an extra line was desired between Lines C and D, one could do the following:
+
+		...
+
+		line_c_form %% \texttt{\fontsize{3.25pt}{3pt}\selectfont \LineC@Latitude, \LineC@Longitude}
+		line_extra_form %% {Here is an extra line of static text that goes on all of the labels.}
+		line_d_form %% \LineD@CollectedBy
+
+		...
+
+	The extra line is easily implemented; e.g., to create det. labels of many species with the same identifier.
+	
+	In pylatex, a command is defined in the preamble of the TeX file that prints a label from keys set in the document.
+	The way the keys are displayed and arranged is taken verbatim from the raw TeX code given in each line in the formatting file:
+
+		<<label_text = r""
+		  for key in sorted(form.keys()):
+			  if key[0:4] == "line" and key[-4:] == "form":
+				  if label_text:
+					  label_text += "\n"
+				  else:
+					  label_text += r"\raggedright"
+				  label_text += "\n\t" + form[key]
+			  else:
+				  pass
+
+		  label = pl.utils.NoEscape(label_text)
+		  lgen_cmd = pl.UnsafeCommand("newcommand", r"\lgen", extra_arguments=label)
+		  doc.preamble.append(lgen_cmd)>>
+
+	More simply, there is only a single "print label" command, and the difference between labels is the data that is inserted.
+	The formatting and layout of the data is identical between all labels (e.g., the "Country" is always in bold uppercase on the first line.).
+	The form of the command generated in LaTeX is as follows:
+
+		[[\newcommand{\lgen}{\raggedright
+			  \textbf{\MakeUppercase{\LineA@Country:}}~\LineA@AdmOne
+
+			  \def\nulldate{00/00/00} {\LineB@LocalityName}, \LineB@DateCollected {\ifx\LineB@DateCollEnd\nulldate \else{~--~\LineB@DateCollEnd}\fi}
+
+			  \texttt{\fontsize{3.25pt}{3pt}\selectfont \LineC@Latitude, \LineC@Longitude}
+
+			  \LineD@CollectedBy
+
+			  \def\nullmethod{} {\ifx\LineE@Method\nullmethod \else{\LineE@Method~-- }\fi}{\LineE@Habitat}
+
+			  \LineF@ElevationM, \LineF@CollectionCode}%]]
+
+	*Note -- The extra empty lines in the TeX code cause the current Line Group to end and signals the next Line Group to be printed on a new line on the page.
+			 These spaces are inserted automatically and circumvent the need to add \newline to the end of each defined line of text.
