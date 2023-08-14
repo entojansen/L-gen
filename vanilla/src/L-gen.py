@@ -81,9 +81,9 @@ def roman(month, upper=1):
     romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
               "XI", "XII"]
     if upper:
-        rm = romans[month]
+        rm = romans[month-1]
     else:
-        rm = romans[month].lower()
+        rm = romans[month-1].lower()
     return rm
 
 

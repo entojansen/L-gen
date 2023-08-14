@@ -551,9 +551,9 @@ Optional column modifiers:
                   <<def roman(month, upper=1):
                       romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
                       if upper:
-                          rm = romans[month]
+                          rm = romans[month-1]
                       else:
-                          rm = romans[month].lower()
+                          rm = romans[month-1].lower()
                       return rm>>
 
               This function is used in combination with <<val_mods>> to format the date string by substituting the decimal month for an equivalent roman numeral:
