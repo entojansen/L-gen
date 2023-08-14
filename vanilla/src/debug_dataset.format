@@ -19,7 +19,7 @@ compiler %% pdflatex
 
 OPTIONAL COLUMN MODIFIERS (remove if not needed)
 -------------------------------------------------------------------------------
-val_mods %% {"Latitude": "'{:.5f}'.format(val)", "Longitude": "'{:.5f}'.format(val)", "DateCollected": "val.strftime('%d/%m/%Y')", "DateCollEnd": "val.strftime('%d/%m/%Y') if hasattr(val,'strftime') else val"}
+val_mods %% {"Latitude": "'{:.5f}'.format(val)", "Longitude": "'{:.5f}'.format(val)", "DateCollected": "val.strftime('%d.{}.%y'.format(roman(val.month)))", "DateCollEnd": "val.strftime('%d.{}.%y'.format(roman(val.month))) if hasattr(val,'strftime') else val"}
 
 
 DATA INCLUSION (write all line names as line_*_cols)

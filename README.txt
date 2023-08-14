@@ -537,14 +537,42 @@ Optional column modifiers:
 		column = column.apply(formula), where the formula comes from val_mods.
 
 	Thus, the values in the column are overwritten with new values that have the formula applied to them.
-	To achieve this, a funciton is defined and called using <<lambda>>; e.g., (lambda x: x + 1), which adds 1 to each value <<x>>.
-	The funcitons used in the default file (format.txt) have two roles.
+	To achieve this, a function is defined and called using <<lambda>>; e.g., (lambda x: x + 1), which adds 1 to each value <<x>>.
+	The functions used in the default file (format.txt) have two roles.
 	First, the coordinates found in columns "Latitude" and "Longitude" are formatted to display 5 decimal places with standard string formatting.
 	Second, the dates found in columns "DateCollected" and "DateCollEnd" are formatted to display "mm/dd/yyyy", using the .strftime method.
 	*Note -- "DateCollEnd" has some values that are null dates (00/00/00).
 			 These are not printed, as explained in Layout formatting, below.
 			 However, they can cause issues with .strftime because they are not read by excel as dates (just as text).
 			 A check is performed to veryify whether .strftime is a valid attribute for the value, and formatted only if so.
+
+    **Note -- To use roman numerals for months in dates, the function <<roman>> has been added to L-gen.py, as follows:
+
+                  <<def roman(month, upper=1):
+                      romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
+                      if upper:
+                          rm = romans[month]
+                      else:
+                          rm = romans[month].lower()
+                      return rm>>
+
+              This function is used in combination with <<val_mods>> to format the date string by substituting the decimal month for an equivalent roman numeral:
+              An example call in <<val_mods>>, using a period character as a separator, might be:
+
+                  val_mods %% {...
+          					   "DateCollected": "val.strftime('%d.{}.%Y'.format(roman(val.month)))",
+          					   "DateCollEnd": "val.strftime('%d.{}.%Y'.format(roman(val.month))) if hasattr(val,'strftime') else val",
+          					   ...}
+
+  			  This example produces dates formatted with uppercase roman numerals for the month (e.g., 31.XIII.1989).
+  			  To produce lowercase roman numerals, the invocation of <<roman>> must specify <<upper=0>> or <<upper=False>> in the function call.
+  			  The following example produces dates formatted with hyphen separators and a lowercase roman numeral month (e.g., 31-xiii-1989):
+
+                  val_mods %% {...
+          					   "DateCollected": "val.strftime('%d-{}-%Y'.format(roman(val.month, upper=0)))",
+          					   "DateCollEnd": "val.strftime('%d-{}-%Y'.format(roman(val.month, upper=0))) if hasattr(val,'strftime') else val",
+          					   ...}
+
 
 Data inclusion:
 

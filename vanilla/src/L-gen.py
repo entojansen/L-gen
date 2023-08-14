@@ -77,6 +77,16 @@ def read_format(file="format.txt"):
     return fdict
 
 
+def roman(month, upper=1):
+    romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+              "XI", "XII"]
+    if upper:
+        rm = romans[month]
+    else:
+        rm = romans[month].lower()
+    return rm
+
+
 def make_labels(form, name, data):
     doc_options = ["10pt", form["pg_size"]]
 
