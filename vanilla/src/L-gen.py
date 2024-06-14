@@ -172,7 +172,7 @@ def make_labels(form, name, data):
     doc.preamble.append(cols_cmd)
 
     if int(form["compress_cols"]):
-        lab_box_def = r"\parbox[t]{\format@width}{#1}\newline\newline"
+        lab_box_def = r"\parbox[t]{\format@width}{#1}\newline"
     else:
         lab_box_def = r"\parbox[t][\format@height]{\format@width}{#1}\newline"
 

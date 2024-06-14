@@ -1,0 +1,32 @@
+MANDATORY COMMANDS (do not remove)
+-------------------------------------------------------------------------------
+pg_size %% letterpaper
+pg_margins %% left=1cm,right=1cm,top=0.8cm,bottom=0.8cm
+font_rm %% libertine
+font_sf %% helvet
+font_tt %% nimbusmononarrow
+sans_serif %% 1
+compress_cols %% 1
+font_size %% 3pt
+font_skip %% 4pt
+label_w_max %% 45pt
+label_h_max %% 27.5pt
+baselinestretch %% 0.2
+cols %% 12
+col_sep %% 0.01cm
+compiler %% pdflatex
+
+
+OPTIONAL COLUMN MODIFIERS (remove if not needed)
+-------------------------------------------------------------------------------
+val_mods %% {"Date": "str(val).replace(' ', '~')"}
+
+
+DATA INCLUSION (write all line names as line_*_cols)
+-------------------------------------------------------------------------------
+line_a_cols %% Country,Province,Locality,Habitat,Date,Tag,CollA,CollB,CollC,CollD,Method,TagRep,BioRepID
+
+
+LAYOUT FORMATTING (write all line names as line_*_cols)
+-------------------------------------------------------------------------------
+line_a_form %% {\textbf{\LineA@Country}~{\LineA@Province}} \LineA@Locality, \LineA@Habitat, {{\LineA@Date}}, \def\nullcoll{}{\LineA@Tag~\LineA@CollA}, {\ifx\LineA@CollB\nullcoll \else{\LineA@CollB ,}\fi}{\ifx\LineA@CollC\nullcoll \else{\LineA@CollC ,}\fi}{\ifx\LineA@CollD\nullcoll \else{\LineA@CollD ,}\fi} \LineA@Method, \LineA@TagRep~\LineA@BioRepID
